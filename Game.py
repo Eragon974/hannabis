@@ -1,16 +1,12 @@
 while game_not_over:
-    update_game()
     send_instructions_to_players()
     receive_actions_from_players()
     check_end_conditions()
     notify_end_of_game()
+    modify_suits()
 
-def update_game():
-    # Update deck, suits in construction, tell which player needs to play etc.
-    ...
-
-def send_instructions_to_players():
-    # Send game state information to players
+def send_infos_to_players():
+    # Send game state information to players, like who needs to play, if an action is possible or not
     ...
 
 def receive_actions_from_players():
@@ -23,4 +19,10 @@ def check_end_conditions():
 
 def notify_end_of_game():
     # Send signals to players for game win or loss
+    ...
+
+def modify_suits():
+    ...
+
+def modify_player_crads():
     ...
