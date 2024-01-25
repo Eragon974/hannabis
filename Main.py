@@ -13,26 +13,20 @@ from multiprocessing import Process, Value, Array
 class Game:
     def __init__(self, num_players):
         self.num_players = num_players
-        self.info_tokens = Value('d',num_players + 3)
-        self.fuse_tokens = Value('d',3)
+        info_tokens = Value('d',num_players + 3)
+        fuse_tokens = Value('d',3)
         self.end_of_game = multiprocessing.Event()
 
-
-    def create_cards(self):
-
-        self.discard_pile = Array('i', [-1]*(self.num_players.value*10))
-
-        self.draw_pile = Array('i', [0]*self.num_players.value*10)
-
-        for i in range(self.num_players.value):
-            self.draw_pile[i*10]=
-
+    def create_cards
     def start(self):
-        players = []
+        self.shuffle(self.discard_deck)
+        self.Player_hand()
     
         for _ in range(self.num_players):
             player = Player(self, self.message_queue)
             players.append(player)
+            for i in range(5):
+                self.hand
             player.start()
 
         self.play()
@@ -54,6 +48,10 @@ class Player(threading.Thread):
         self.message_queue = message_queue
         self.hand = self.generate_initial_hand()
 
+    def generate_initial_hand(self):
+        # Generate initial hand for the player
+        return [random.randint(1, 5) for _ in range(5)]
+    
     def run(self):
         while not self.game.end_of_game.is_set():
             self.update_hand_information()
@@ -61,26 +59,7 @@ class Player(threading.Thread):
             self.send_actions_to_game()
             self.receive_updates_from_game()
 
-    def give_information(self, player_id):
-        choice = input("Voulez-vous donner une information sur une couleur ou un chiffre ? c/n")
-        while check_response:
-            if choice == "c":
-                color = input("Sur quelle couleur voulez-vous donner une information ?")
-                print(f"Vous choisissez de donner une information sur la couleur : {color}")
-
-            elif choice == "n":
-                check_number=False
-                while not check_number:
-                    number = input("Sur quelle chiffre (entre 1 et 5) voulez-vous donner une information ?")
-                    if number in ["1","2","3","4","5"]:
-                        print(f"Vous choisissez de donner une information sur le chiffre : {number}")
-                        check_number=True
-                    else:
-                        print("Vous devez choisir un chiffre entre 1 et 5")
-            else:
-                check_response=False
-                print("Vous devez choisir entre une couleur et un chiffre")
-
+    
 
     def update_hand_information(self):
         # Update information about the player's hand
@@ -110,8 +89,12 @@ class Player(threading.Thread):
 if __name__ == "__main__":
     num_players = 3
     game = Game(num_players)
-    game_process = multiprocessing.Process(target=game.start)
-    game_process.start()
+    cartes = game.trad_card(game.discard_deck)
+    for i in cartes:
+        print(i)
+    
+    #game_process = multiprocessing.Process(target=game.start)
+    #game_process.start()
 
-    # Wait for the game to finish
-    game_process.join()
+    #Wait for the game to finish
+    #game_process.join()
