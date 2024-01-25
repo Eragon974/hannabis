@@ -12,18 +12,62 @@ from multiprocessing import Process, Value, Array
 
 class Game:
     def __init__(self, num_players):
-        self.num_players = num_players
-        info_tokens = Value('d',num_players + 3)
-        fuse_tokens = Value('d',3)
+        self.num_players = Value('i', num_players)
+        self.info_tokens = Value('i', num_players + 3)
+        self.fuse_tokens = Value('i',3)
         self.end_of_game = multiprocessing.Event()
+        self.create_cards()
+        
+    def Player_hand(self):
+        for i in range(num_players):
+            self.players = []
+            self.hand_Player = Array('i', [0]*5)
+            for k in range(5):
+                self.hand_Player[k]=self.discard_deck[0]
+                for j in range(1,len(self.discard_deck),1): 
+                    self.discard_deck[j-1]=self.discard_deck[j]
+                if j==(len(self.discard_deck)-1):
+                        self.discard_deck[j]=-1
+            self.players.append(self.hand_Player)
 
-    def create_cards
+    def shuffle(self, Array):
+        random.shuffle(Array)  
+
+    def create_cards(self):
+        self.discard_deck = Array('i', [0]*(10*self.num_players.value))
+        for i in range (self.num_players.value):
+            self.discard_deck[i*10]=0+i*5
+            self.discard_deck[i*10+1]=0+i*5
+            self.discard_deck[i*10+2]=0+i*5
+            self.discard_deck[i*10+3]=1+i*5
+            self.discard_deck[i*10+4]=1+i*5
+            self.discard_deck[i*10+5]=2+i*5
+            self.discard_deck[i*10+6]=2+i*5
+            self.discard_deck[i*10+7]=3+i*5
+            self.discard_deck[i*10+8]=3+i*5
+            self.discard_deck[i*10+9]=4+i*5
+            self.shuffle(self.discard_deck)
+            
+
+    def trad_card (self, Array):
+        couleur = ["blue","red","yellow","black","white","pink"]
+        card=list(Array)    
+        for i in range (len(card)):
+            if card[i]==-1:
+                card[i] = "Vide"
+            else:    
+                card[i] = f"{couleur[card[i]//5]} {card[i]%5+1}"
+        return card
+
     def start(self):
-        players = []
+        self.shuffle(self.discard_deck)
+        self.Player_hand()
     
         for _ in range(self.num_players):
             player = Player(self, self.message_queue)
             players.append(player)
+            for i in range(5):
+                self.hand
             player.start()
 
         self.play()
@@ -43,20 +87,13 @@ class Player(threading.Thread):
         super(Player, self).__init__()
         self.game = game
         self.message_queue = message_queue
-        self.hand = self.generate_initial_hand()
 
-    def generate_initial_hand(self):
-        # Generate initial hand for the player
-        return [random.randint(1, 5) for _ in range(5)]
-    
     def run(self):
         while not self.game.end_of_game.is_set():
             self.update_hand_information()
             self.display_game_state()
             self.send_actions_to_game()
             self.receive_updates_from_game()
-
-    
 
     def update_hand_information(self):
         # Update information about the player's hand
@@ -86,8 +123,12 @@ class Player(threading.Thread):
 if __name__ == "__main__":
     num_players = 3
     game = Game(num_players)
-    game_process = multiprocessing.Process(target=game.start)
-    game_process.start()
+    cartes = game.trad_card(game.discard_deck)
+    for i in cartes:
+        print(i)
+    
+    #game_process = multiprocessing.Process(target=game.start)
+    #game_process.start()
 
-    # Wait for the game to finish
-    game_process.join()
+    #Wait for the game to finish
+    #game_process.join()
