@@ -17,7 +17,6 @@ class Game:
         fuse_tokens = Value('d',3)
         self.end_of_game = multiprocessing.Event()
 
-    def create_cards
     def start(self):
         self.shuffle(self.discard_deck)
         self.Player_hand()
@@ -59,7 +58,25 @@ class Player(threading.Thread):
             self.send_actions_to_game()
             self.receive_updates_from_game()
 
-    
+        def give_information(self, player_id):
+            choice = input("Voulez-vous donner une information sur une couleur ou un chiffre ? c/n")
+            while check_response:
+                if choice == "c":
+                    color = input("Sur quelle couleur voulez-vous donner une information ?")
+                    print(f"Vous choisissez de donner une information sur la couleur : {color}")
+
+                elif choice == "n":
+                    check_number=False
+                    while not check_number:
+                        number = input("Sur quelle chiffre (entre 1 et 5) voulez-vous donner une information ?")
+                        if number in ["1","2","3","4","5"]:
+                            print(f"Vous choisissez de donner une information sur le chiffre : {number}")
+                            check_number=True
+                        else:
+                            print("Vous devez choisir un chiffre entre 1 et 5")
+                else:
+                    check_response=False
+                    print("Vous devez choisir entre une couleur et un chiffre")
 
     def update_hand_information(self):
         # Update information about the player's hand
