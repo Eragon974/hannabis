@@ -32,7 +32,7 @@ class Game:
         self.discard_deck = []
 
     def shuffle(self):
-        random.shuffle(self.discard_deck)
+        random.shuffle(self.deck)
 
     def create_cards(self):
         self.deck = []
@@ -162,13 +162,13 @@ class Game:
     def is_finished(self) :
         won = True
         lost = False
-        for suite in self.suites :
+        for suite in self.allsuits :
             if len(suite) != 5 :
                 won = False     
         if self.fuse == 0 :
             lost = True
         else :
-            if 5 in self.discard_pile :
+            if 5 in self.discard_deck :
                 lost = True
                 
         return won,lost
