@@ -11,17 +11,15 @@ from multiprocessing import Process, Manager, Semaphore
 from queue import Queue
 
 class Player:
-    
     def __init__(self, game, ID, queue, lock, port, hand):
         super(Player, self).__init__()
         self.ID = ID
         self.game = game
-        self.def_indice()
         self.hand_Player=hand
         self.queue=queue
         self.lock=lock
         self.port=port
-
+        self.def_indice()
 
     def def_indice(self):
         self.hand_indice = []
@@ -122,15 +120,15 @@ class Player:
         nb_carte=nb_carte-1
         if self.get_couleur_carte(self.hand_Player[nb_carte]) == suits:
             for i in range(5):
-                if int(self.game.allsuits[self.get_suits_color_number(suits)][0]) == -1 and int(self.get_valeur_carte(self.hand_Player[nb_carte])) == 1:
+                if int(self.game.allsuits[self.game.get_suits_color_number(suits)][0]) == -1 and int(self.get_valeur_carte(self.hand_Player[nb_carte])) == 1:
                     reponse = f"{self.ID} cartes {suits} {nb_carte}"
                     self.tcp_socket.send(reponse.encode())
                     return True
-                elif int(self.game.allsuits[self.get_suits_color_number(suits)][i]) == -1 and int(self.game.allsuits[self.get_suits_color_number(suits)][i]) == int(self.game.allsuits[self.get_suits_color_number(suits)][i-1])+1:
+                elif int(self.game.allsuits[self.game.get_suits_color_number(suits)][i]) == -1 and int(self.game.allsuits[self.game.get_suits_color_number(suits)][i]) == int(self.game.allsuits[self.game.get_suits_color_number(suits)][i-1])+1:
                     reponse = f"{self.ID} cartes {suits} {nb_carte}"
                     self.tcp_socket.send(reponse.encode())
                     return True
-                elif i==4 and int(self.game.allsuits[self.get_suits_color_number(suits)][i]) != -1:
+                elif i==4 and int(self.game.allsuits[self.game.get_suits_color_number(suits)][i]) != -1:
                     reponse = f"{self.ID} discard {suits} {nb_carte}"
                     self.tcp_socket.send(reponse.encode())
                     return False       
@@ -143,7 +141,12 @@ class Player:
         while True:
             choix_utilisateur = str(input("Veuillez faire votre choix: ").lower())  # .lower() pour rendre l'entrée insensible à la casse
             if choix_utilisateur in mots_autorises:
-                return choix_utilisateur
+                if choix_utilisateur == "information" and self.game.fuse_tokens!=0:
+                    return choix_utilisateur
+                elif choix_utilisateur != "information":
+                    return choix_utilisateur
+            elif self.game.fuse_tokens==0: 
+                print("Vous n'avez plus de fuse token. Vous devez en avoir au moins une pour pouvoir envoyer des informations")
             else:
                 print("Choix invalide")
 
@@ -181,7 +184,7 @@ class Player:
             mots_autorises=self.game.couleur
             choix=self.obtenir_choix(mots_autorises)[0]
             self.send_message(f"{joueur}{choix}")
-            reponse = "info"
+            reponse = f"{self.ID} info"
             self.tcp_socket.send(reponse.encode())
             print(f"\nL'information a bien été envoyé\n")
         if choix=="chiffre":
@@ -189,7 +192,10 @@ class Player:
             mots_autorises = [str(i) for i in range(1,6,1)]
             choix =self.obtenir_choix(mots_autorises)
             self.send_message(f"{joueur}{choix}")
+            reponse = f"{self.ID} info"
+            self.tcp_socket.send(reponse.encode())
             print(f"\nL'information a bien été envoyé\n")
+            
 
     def choix_indice(self):
         self.show_my_indice(self.hand_indice)
@@ -207,14 +213,14 @@ class Player:
 
     def action(self):
         self.set_indice_and_reload()
-        print(self.indice)
         print(f"Vous etes le Joueur {self.ID}\n")
+        print(f"Vous avez {self.game.info_tokens} tokens d'information")
         print("Voici les cartes des autres Joueurs:\n")
         self.show_cartes()
         print("Vous pouvez maintenant choisir entre 4 actions: Information, Cartes, Indice ou Suits\n")
         mots_autorises = ["information","cartes","indice","suits"]
         choix = self.obtenir_choix(mots_autorises)
-        if choix == "information":
+        if choix == "information" :
             self.choix_info()
         if choix == "cartes":
            self.choix_cartes()
@@ -261,7 +267,6 @@ class Player:
     
     def set_indice_and_reload(self):
         copie_queue = list(self.get_all_msg())
-        print(copie_queue)
         for i in range (0,len(copie_queue),2):
             ID=int(copie_queue[i])
             info=copie_queue[i+1]
@@ -270,7 +275,7 @@ class Player:
                     for i in range(len(self.hand_Player)):
                         if int(self.get_valeur_carte(self.hand_Player[i]))==int(info):
                             self.indice[i][1] = True
-                else:
+                elif type(info)==str:
                     for i in range(len(self.hand_Player)):
                         if self.get_couleur_carte(self.hand_Player[i])[0]==info:
                             self.indice[i][0] = True

@@ -16,7 +16,6 @@ class Game:
         self.allsuits = []
         self.players = []
         self.allSemaphore = []
-        self.allClient = []
         for i in range(self.num_players):
             self.suits_in_construction = []
             for i in range(5):
@@ -27,10 +26,11 @@ class Game:
         self.fuse_tokens = 3
         self.port = port
         self.nb_tour = 0
+        self.HOST = 'localhost'
         self.create_cards()
-        self.shuffle()
         self.discard_deck = []
-
+        self.Player_hand()
+        
     def shuffle(self):
         random.shuffle(self.deck)
 
@@ -80,7 +80,6 @@ class Game:
         couleur, valeur = carte.split()
         valeur = int(valeur)
         symbole = str(valeur)
-
         # Créer la représentation de la carte avec des caractères ASCII standard
         ligne1 = f"+-------+"
         ligne2 = f"| {symbole:^2}    |"
@@ -122,28 +121,33 @@ class Game:
         self.buffer=""
         if message[1]== "info":
             self.info_tokens-=1
-        if message[1]== "cartes":
-            self.allsuits[self.get_suits_color_number(message[3])][0] = (self.allhand[message[0]-1])[message[4]]
-            self.discard_deck.append((self.allhand[message[0]-1])[message[4]])
-            self.draw(message[4],self.allhand[message[0]-1])
+        if message[1] == "cartes":
+            i=int(message[0])
+            j=int(message[3])
+            self.allsuits[self.get_suits_color_number(message[2])][0] = (self.allhand[i-1])[j]
+            self.discard_deck.append((self.allhand[i-1])[j])
+            self.draw(j,self.players[i-1])
         if message[1] == "discard":
+            i=int(message[0])
+            j=int(message[3])
             self.fuse_tokens-=1
-            self.discard_deck.append(self.players[message[0]-1].hand_Player[message[4]])
-            self.draw(message[4],self.players[message[0]-1])
+            self.discard_deck.append(self.players[i-1].hand_Player[j])
+            self.draw(j,self.players[i-1])
 
     def get_socket_message(self,client_socket,lock,my_lock):
-        with self.client_socket:
+        with client_socket:
             while True :
                 my_lock.acquire()
                 data = client_socket.recv(1024).decode()
-                self.buffer += data
+                self.buffer = data
+                time.sleep(2)
                 lock.release()
 
     def Player_hand(self):
         self.allhand = []
         for _ in range (self.num_players):
+            hand = []
             for _ in range(5):
-                hand = []
                 hand.append(self.deck[0])
                 for j in range(1,len(self.deck),1): 
                     self.deck[j-1]=self.deck[j]
@@ -152,7 +156,6 @@ class Game:
             self.allhand.append(hand)        
 
     def create_players_lock(self) :
-        self.Player_hand()
         queue=Queue()
         self.locks = []
         for i in range(self.num_players):
@@ -160,18 +163,17 @@ class Game:
             self.players.append(Player(self,i+1,queue,self.locks[i],self.port,self.allhand[i]))   
 
     def is_finished(self) :
-        won = True
-        lost = False
-        for suite in self.allsuits :
-            if len(suite) != 5 :
-                won = False     
-        if self.fuse == 0 :
-            lost = True
+        end = False
+        won = False    
+        if self.fuse_tokens == 0 :
+            end = True
         else :
-            if 5 in self.discard_deck :
-                lost = True
+            for i in range(self.num_players):
+                if 4+i*5 in self.discard_deck:
+                    end = True
+                    won = True
                 
-        return won,lost
+        return end,won
     
     def start(self):
         self.create_players_lock()
@@ -185,25 +187,26 @@ class Game:
             self.buffer = "" 
             allplayer_threads = []     
             for i in range(self.num_players) :
-                t = threading.Thread(target=self.players[i].game_start())
+                t = threading.Thread(target=self.players[i].game_start)
                 t.start()
-                allplayer_threads.append(t)
+                allplayer_threads.append(t)    
             alltcp_process=[]
             for i in range(self.num_players) :
                 conn, addr = server_socket.accept()
-                t = Process(target=self.get_socket_message, args=(conn, self.game_lock,self.buffer_locks[i],self.port))
+                t = threading.Thread(target=self.get_socket_message, args=(conn,self.game_lock,self.buffer_locks[i]))
                 t.start()
                 alltcp_process.append(t)
-            end,fin = self.is_finished()
+            end,won = self.is_finished()
 
-            while not won and not lost :
+            while end == False :
+                print("\033c")
                 print("Début du tour")
                 self.nb_tour += 1
                 self.buffer_locks[(self.nb_tour-1)%self.num_players].release()
                 self.locks[(self.nb_tour-1)%self.num_players].release()
                 self.game_lock.acquire()
                 self.logic_buffer()
-                won,lost = self.is_finished()
+                end, won = self.is_finished()
             if won:
                 print("Vous avez gagnez")
             else :
@@ -212,8 +215,8 @@ class Game:
 
 if __name__ == "__main__" :
     num_players = int(input("Nombre de joueurs :\n"))
-    port = int(input("Port > 6000"))
-    game = Game(num_players,6000)
+    port = int(input("Port > 6000\n"))
+    game = Game(num_players,port)
     game.start()
 
 
