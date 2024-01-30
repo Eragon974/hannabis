@@ -7,6 +7,7 @@ import random
 import signal
 import threading
 import socket
+from multiprocessing import Process, Manager, Semaphore
 from queue import Queue
 
 class Player:
@@ -18,7 +19,6 @@ class Player:
         self.Player_hand()
         self.def_indice()
         self.queue=queue
-
 
     def Player_hand(self):
         self.hand_Player = []
@@ -36,7 +36,7 @@ class Player:
             self.hand_indice.append(self.hand_Player[i])
             self.indice.append([False,False])
 
-    def show_my_indices(self, carte):
+    def show_my_indices(self, carte, i):
         carte = self.game.trad_1card(carte)
         if carte == "Vide":
             ligne1 = f"+-------+"
@@ -51,20 +51,20 @@ class Player:
         valeur = "-1"
         couleur = "blue"
         symbole = "J"
-        if self.indice[(self.ID)-1][0] == True and self.indice[(self.ID)-1][1] == True:
+        if self.indice[i][0] == True and self.indice[i][1] == True:
             couleur, valeur = carte.split()
             valeur = int(valeur)
             symbole = str(valeur) if valeur <= 10 else {11: 'J', 12: 'Q', 13: 'K', 14: 'A'}.get(valeur, '')
-        elif self.indice[(self.ID)-1][0] == False and self.indice[(self.ID)-1][1] == True:
+        elif self.indice[i][0] == False and self.indice[i][1] == True:
             couleur, valeur = carte.split()
             valeur = int(valeur)
             symbole = str(valeur) if valeur <= 10 else {11: 'J', 12: 'Q', 13: 'K', 14: 'A'}.get(valeur, '')
             couleur = "?"
-        elif self.indice[(self.ID)-1][0] == True and self.indice[(self.ID)-1][1] == False:
+        elif self.indice[i][0] == True and self.indice[i][1] == False:
             couleur, valeur = carte.split()
             valeur = "?"
             symbole = "?"
-        elif self.indice[(self.ID)-1][0] == False and self.indice[(self.ID)-1][1] == False:
+        elif self.indice[i][0] == False and self.indice[i][1] == False:
             couleur, valeur = carte.split()
             valeur = "?"  
             symbole = "?"   
@@ -80,17 +80,12 @@ class Player:
 
         return [ligne1, ligne2, ligne3, ligne4, ligne5]
 
-    def show_my_indice(self,cartes):
-        for i in range(5):
-            for carte in cartes:
-                print(self.show_my_indices(carte)[i] + "  ", end="")
-            print()
-
-    def show_indices(self):
+    def show_my_indice(self, cartes):
         print(f"Indice Joueur {self.ID}\n")
-        for i in range(0, len(self.hand_indice), 5):
-            self.show_my_indice(self.hand_indice)
-            print()
+        for i in range(len(cartes)):
+            for j in range(5):
+                print(self.show_my_indices(cartes[i], i)[j]+ "  ", end="")
+                print()
     
     def show_suits(self):
         print(f"Indice Joueur {self.ID}\n")
@@ -226,12 +221,12 @@ class Player:
         if choix=="chiffre":
             print("Quel chiffre entre 1 et 5?")
             mots_autorises = [str(i) for i in range(1,6,1)]
-            int(choix =self.obtenir_choix(mots_autorises))
+            choix =self.obtenir_choix(mots_autorises)
             self.send_message(f"{joueur}{choix}")
             print(f"\nL'information a bien été envoyé\n")
 
     def choix_indice(self):
-        self.show_indices()
+        self.show_my_indice(self.hand_indice)
         print("Vous pouvez maintenant choisir entre 3 actions: Information, Cartes ou Suits \n")
         mots_autorises = ["information","cartes","suits"]
         choix = self.obtenir_choix(mots_autorises)
@@ -246,6 +241,7 @@ class Player:
 
     def action(self):
         self.set_indice_and_reload()
+        print(self.indice)
         print(f"Vous etes le Joueur {self.ID}\n")
         print("Voici les cartes des autres Joueurs:\n")
         self.show_cartes()
@@ -280,6 +276,7 @@ class Player:
                     self.choix_info()
                 if choix == "cartes":
                     self.choix_cartes()
+
     def send_message(self,msg):
         self.queue.put(msg)   
 
@@ -296,19 +293,14 @@ class Player:
             ID=int(copie_queue[i])
             info=copie_queue[i+1]
             if ID == self.ID:
-                if type(info) == int:
+                if info=='1' or info=='2' or info=='3' or info=='4' or info=='5':
                     for i in range(len(self.hand_Player)):
-                        if self.get_valeur_carte(self.hand_Player[i])==info:
-                            self.indice[(self.ID)-1][2] == True
+                        if int(self.get_valeur_carte(self.hand_Player[i]))==int(info):
+                            self.indice[i][1] = True
                 elif type(info) == str:
                     for i in range(len(self.hand_Player)):
                         if self.get_couleur_carte(self.hand_Player[i])[0]==info:
-                            self.indice[(self.ID)-1][1] == True
+                            self.indice[i][0] = True
             else:
                 self.queue.put(copie_queue[i])
                 self.queue.put(copie_queue[i+1])
-
-
-
-    #def player_process(self):
-        

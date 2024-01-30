@@ -5,18 +5,18 @@ import time
 import json
 import random
 import signal
-from multiprocessing import Process, Value, Array
+from multiprocessing import Process, Manager, Semaphore
 import socket
 from queue import Queue
 from Player import Player
 
 class Game:
-
-    def __init__(self, num_players):
+    def __init__(self, num_players, port):
         self.num_players = num_players
         self.allsuits = []
         self.players = []
-        self.allsemaphore = []
+        self.allSemaphore = []
+        self.allTcpConnect = []
         for i in range(self.num_players):
             self.suits_in_construction = []
             for i in range(5):
@@ -25,6 +25,7 @@ class Game:
         self.couleur = ["blue","red","yellow","green","white"]
         self.info_tokens = num_players + 3
         self.fuse_tokens = 3
+        self.port = port
         self.create_cards()
         self.shuffle()
 
@@ -99,17 +100,19 @@ class Game:
                 print(self.afficher_carte(carte)[i] + "  ", end="")
             print()
 
-    def game_process(self):
-        for i in range(self.num_players.value):
-            player = Player(self, i+1)
-            self.players.append(player)
-        self.play()
 
-    def handle_player(self,ID):
-        while True:
-            # Attendre un message du joueur
-            self.msg = self.player_socket.recv(1024).decode()
-            if not self.msg:
-                break
-            print(f"Joueur {ID} a envoyé: {self.msg}")
+    def is_finished(self) :
+        self.won = True
+        self.lost = False
+        for suite in self.suits_in_construction :
+            if len(suite) != 5 :
+                self.won = False  
+        if self.fuse_tokens == 0 :
+            self.lost = True
+
+if __name__ == "__main__" :
+    num_players = int(input("Nombre de joueurs :\n"))
+    game = Game(num_players,6698)
+    game.start()
+
 
