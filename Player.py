@@ -1,13 +1,10 @@
-import multiprocessing
 import threading
 import queue
 import time
-import json
 import random
-import signal
 import threading
 import socket
-from multiprocessing import Process, Manager, Semaphore
+from multiprocessing import Semaphore
 from queue import Queue
 
 class Player:
@@ -188,7 +185,7 @@ class Player:
                     reponse = f"{self.ID} cartes {suits} {nb_carte}"
                     self.tcp_socket.send(reponse.encode())
                     return True
-                elif i>1 and self.allsuits[self.get_suits_color_number(suits)][i-1] != -1:
+                elif i>1 and int(self.allsuits[self.get_suits_color_number(suits)][i-1]) != -1:
                     if int(self.allsuits[self.get_suits_color_number(suits)][i]) == -1 and int(self.get_valeur_carte(self.hand_Player[nb_carte])) == int(self.get_valeur_carte(self.allsuits[self.get_suits_color_number(suits)][i-1]))+1:
                         reponse = f"{self.ID} cartes {suits} {nb_carte}"
                         self.tcp_socket.send(reponse.encode())

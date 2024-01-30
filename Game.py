@@ -5,7 +5,7 @@ import time
 import json
 import random
 import signal
-from multiprocessing import Process, Manager, Semaphore
+from multiprocessing import Process, Manager,Semaphore
 import socket
 from queue import Queue
 from Player import Player
@@ -117,7 +117,7 @@ class Game:
                 my_lock.acquire()
                 data = client_socket.recv(1024).decode()
                 self.buffer = data
-                time.sleep(5)
+                time.sleep(3)
                 lock.release()
 
     def Player_hand(self):
