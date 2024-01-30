@@ -16,6 +16,7 @@ class Game:
         self.allsuits = []
         self.players = []
         self.allSemaphore = []
+        self.endpile=[False]*num_players
         for i in range(self.num_players):
             self.suits_in_construction = []
             for i in range(5):
@@ -24,6 +25,7 @@ class Game:
         self.couleur = ["blue","red","yellow","green","white"]
         self.info_tokens = num_players + 3
         self.fuse_tokens = 3
+        self.tokens=[self.info_tokens, self.fuse_tokens]
         self.port = port
         self.nb_tour = 0
         self.HOST = 'localhost'
@@ -64,37 +66,6 @@ class Game:
             else:    
                 card = f"{self.couleur[card//5]} {card%5+1}"
         return card
-
-    def afficher_carte(self,carte):
-        carte = self.trad_1card(carte)
-        if carte == "Vide":
-            ligne1 = f"+-------+"
-            ligne2 = f"|       |"
-            ligne3 = f"|       |"
-            ligne4 = f"|       |"
-            ligne5 = f"+-------+"
-            return [ligne1, ligne2, ligne3, ligne4, ligne5]
-
-        largeur_carte = 7
-        hauteur_carte = 5
-        couleur, valeur = carte.split()
-        valeur = int(valeur)
-        symbole = str(valeur)
-        # Créer la représentation de la carte avec des caractères ASCII standard
-        ligne1 = f"+-------+"
-        ligne2 = f"| {symbole:^2}    |"
-        ligne3 = f"|   {couleur[:1]}   |"
-        ligne4 = f"|    {symbole:^2} |"
-        ligne5 = f"+-------+"
-
-        return [ligne1, ligne2, ligne3, ligne4, ligne5]
-
-    def afficher_cartes(self,cartes):
-        for i in range(5):
-            for carte in cartes:
-                print(self.afficher_carte(carte)[i] + "  ", end="")
-            print()
-
     def get_suits_color_number(self,color):
         if color == "blue":
             return 0
@@ -124,7 +95,9 @@ class Game:
         if message[1] == "cartes":
             i=int(message[0])
             j=int(message[3])
-            self.allsuits[self.get_suits_color_number(message[2])][0] = (self.allhand[i-1])[j]
+            for i in range(len(self.allsuits[self.get_suits_color_number(message[2])])):
+                if self.allsuits[self.get_suits_color_number(message[2])][i]== -1:
+                    self.allsuits[self.get_suits_color_number(message[2])][i] = (self.allhand[i-1])[j]
             self.discard_deck.append((self.allhand[i-1])[j])
             self.draw(j,self.players[i-1])
         if message[1] == "discard":
@@ -140,7 +113,7 @@ class Game:
                 my_lock.acquire()
                 data = client_socket.recv(1024).decode()
                 self.buffer = data
-                time.sleep(2)
+                time.sleep(3)
                 lock.release()
 
     def Player_hand(self):
@@ -160,19 +133,23 @@ class Game:
         self.locks = []
         for i in range(self.num_players):
             self.locks.append(Semaphore(0))
-            self.players.append(Player(self,i+1,queue,self.locks[i],self.port,self.allhand[i]))   
+            self.players.append(Player(i+1,queue,self.locks[i],self.port,self.allhand[i],self.allsuits,self.players,self.couleur,self.tokens))   
 
     def is_finished(self) :
         end = False
-        won = False    
-        if self.fuse_tokens == 0 :
+        won = False  
+        for i in range(len(self.allsuits)):
+            if 4+i*5 in self.allsuits[i]:
+                self.endpile[i]==True
+        if all(self.endpile):
+            won=True
+            end=True
+        elif self.fuse_tokens == 0 :
             end = True
         else :
-            for i in range(self.num_players):
-                if 4+i*5 in self.discard_deck:
-                    end = True
-                    won = True
-                
+            if 4+i*5 in self.discard_deck:
+                end=True
+            
         return end,won
     
     def start(self):
@@ -199,7 +176,7 @@ class Game:
             end,won = self.is_finished()
 
             while end == False :
-                print("\033c")
+                #print("\033c")
                 print("Début du tour")
                 self.nb_tour += 1
                 self.buffer_locks[(self.nb_tour-1)%self.num_players].release()
