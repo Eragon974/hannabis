@@ -141,13 +141,14 @@ class Game:
 
     def Player_hand(self):
         self.allhand = []
-        for _ in range(5):
-            hand = []
-            hand.append(self.deck[0])
-            for j in range(1,len(self.deck),1): 
-                self.deck[j-1]=self.deck[j]
-            if j==(len(self.deck)-1):
-                    self.deck[j]=-1
+        for _ in range (self.num_players):
+            for _ in range(5):
+                hand = []
+                hand.append(self.deck[0])
+                for j in range(1,len(self.deck),1): 
+                    self.deck[j-1]=self.deck[j]
+                    if j==(len(self.deck)-1):
+                        self.deck[j]=-1
             self.allhand.append(hand)        
 
     def create_players_lock(self) :
