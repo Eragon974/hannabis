@@ -12,22 +12,16 @@ from queue import Queue
 
 class Player:
     
-    def __init__(self, game, ID, queue):
+    def __init__(self, game, ID, queue, lock, port, hand):
         super(Player, self).__init__()
         self.ID = ID
         self.game = game
-        self.Player_hand()
         self.def_indice()
+        self.hand_Player=hand
         self.queue=queue
+        self.lock=lock
+        self.port=port
 
-    def Player_hand(self):
-        self.hand_Player = []
-        for _ in range(5):
-            self.hand_Player.append(self.game.discard_deck[0])
-            for j in range(1,len(self.game.discard_deck),1): 
-                self.game.discard_deck[j-1]=self.game.discard_deck[j]
-            if j==(len(self.game.discard_deck)-1):
-                    self.game.discard_deck[j]=-1
 
     def def_indice(self):
         self.hand_indice = []
@@ -106,13 +100,6 @@ class Player:
                 self.game.afficher_cartes(self.game.allsuits[j][i:i+5])
                 print()
 
-    def draw(self,nb):
-        self.hand_Player[nb]=self.game.discard_deck[0]
-        for i in range(1,len(self.game.discard_deck),1): 
-            self.game.discard_deck[i-1]=self.game.discard_deck[i]
-        if i==(len(self.game.discard_deck)-1):
-                self.game.discard_deck[i]=-1
-
     def show_cartes(self):
         for joueur in self.game.players:
             if joueur != self:
@@ -130,48 +117,26 @@ class Player:
         card = self.game.trad_1card(carte)
         couleur, valeur = card.split()
         return valeur
-     
-    def get_suits_color_number(self,color):
-        if color == "blue":
-            return 0
-        elif color == "red":
-            return 1
-        elif color == "yellow":
-            return 2
-        elif color == "purple":
-            return 3
-        elif color == "white":
-            return 4
-        elif color == "pink":
-            return 5 
-        
-    def add_to_discarding_deck(self,carte):
-        for i in range(len(self.game.discard_deck)):
-            if self.game.discard_deck[i] == -1:
-                self.game.discard_deck[i]=carte
-                break
-
+    
     def add_to_suits(self,suits,nb_carte):
         nb_carte=nb_carte-1
         if self.get_couleur_carte(self.hand_Player[nb_carte]) == suits:
             for i in range(5):
                 if int(self.game.allsuits[self.get_suits_color_number(suits)][0]) == -1 and int(self.get_valeur_carte(self.hand_Player[nb_carte])) == 1:
-                    self.game.allsuits[self.get_suits_color_number(suits)][0] = self.hand_Player[nb_carte]
-                    self.draw(nb_carte)
+                    reponse = f"{self.ID} cartes {suits} {nb_carte}"
+                    self.tcp_socket.send(reponse.encode())
                     return True
                 elif int(self.game.allsuits[self.get_suits_color_number(suits)][i]) == -1 and int(self.game.allsuits[self.get_suits_color_number(suits)][i]) == int(self.game.allsuits[self.get_suits_color_number(suits)][i-1])+1:
-                    self.game.allsuits[self.get_suits_color_number(suits)][i] = self.hand_Player[nb_carte]
-                    self.draw(nb_carte)
+                    reponse = f"{self.ID} cartes {suits} {nb_carte}"
+                    self.tcp_socket.send(reponse.encode())
                     return True
                 elif i==4 and int(self.game.allsuits[self.get_suits_color_number(suits)][i]) != -1:
-                    self.add_to_discarding_deck(self.hand_Player[nb_carte])
-                    self.draw(nb_carte)
-                    self.game.fuse_tokens-=1
+                    reponse = f"{self.ID} discard {suits} {nb_carte}"
+                    self.tcp_socket.send(reponse.encode())
                     return False       
         elif self.get_couleur_carte(self.hand_Player[nb_carte]) != suits:
-            self.add_to_discarding_deck(self.hand_Player[nb_carte])
-            self.draw(nb_carte)
-            self.game.fuse_tokens-=1
+            reponse = reponse = f"{self.ID} discard {suits} {nb_carte}"
+            self.tcp_socket.send(reponse.encode())
             return False
 
     def obtenir_choix(self,mots_autorises):
@@ -194,7 +159,6 @@ class Player:
         pile = self.obtenir_choix(mots_autorises)
         print(f"Vous avez envoyé votre carte\n")
         reponse = self.add_to_suits(pile, num_card)
-        print(reponse)
         if reponse == True:
             print("Vous avez réussi à poser votre carte dans la bonne pile\n")
         elif reponse == False:
@@ -217,6 +181,8 @@ class Player:
             mots_autorises=self.game.couleur
             choix=self.obtenir_choix(mots_autorises)[0]
             self.send_message(f"{joueur}{choix}")
+            reponse = "info"
+            self.tcp_socket.send(reponse.encode())
             print(f"\nL'information a bien été envoyé\n")
         if choix=="chiffre":
             print("Quel chiffre entre 1 et 5?")
@@ -276,6 +242,13 @@ class Player:
                     self.choix_info()
                 if choix == "cartes":
                     self.choix_cartes()
+    
+    def game_start(self) :
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_socket.connect(("localhost", self.port))
+        while True :
+            self.lock.acquire()
+            self.action()
 
     def send_message(self,msg):
         self.queue.put(msg)   
@@ -297,7 +270,7 @@ class Player:
                     for i in range(len(self.hand_Player)):
                         if int(self.get_valeur_carte(self.hand_Player[i]))==int(info):
                             self.indice[i][1] = True
-                elif type(info) == str:
+                else:
                     for i in range(len(self.hand_Player)):
                         if self.get_couleur_carte(self.hand_Player[i])[0]==info:
                             self.indice[i][0] = True
