@@ -117,7 +117,7 @@ class Game:
                 my_lock.acquire()
                 data = client_socket.recv(1024).decode()
                 self.buffer = data
-                time.sleep(3)
+                time.sleep(5)
                 lock.release()
 
     def Player_hand(self):
@@ -148,11 +148,12 @@ class Game:
         if all(self.endpile):
             won=True
             end=True
-        elif self.tokens[1] == 0 :
+        elif self.tokens[1] < 1:
             end = True
         else :
-            if 4+i*5 in self.discard_deck:
-                end=True
+            for i in range(5):
+                if 4+i*5 in self.discard_deck:
+                    end=True
             
         return end,won
     
@@ -192,7 +193,6 @@ class Game:
                 print("Vous avez gagnez")
             else :
                 print("Vous avez perdu")
-
 
 if __name__ == "__main__" :
     num_players = int(input("Nombre de joueurs :\n"))

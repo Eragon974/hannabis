@@ -246,16 +246,17 @@ class Player:
             choix=self.obtenir_choix(mots_autorises)[0]
             self.send_message(f"{joueur}{choix}")
             reponse = f"{self.ID} info"
-            self.tcp_socket.send(reponse.encode())
             print(f"\nL'information a bien été envoyé\n")
+            self.tcp_socket.send(reponse.encode())
+            
         if choix=="chiffre":
             print("Quel chiffre entre 1 et 5?")
             mots_autorises = [str(i) for i in range(1,6,1)]
             choix =self.obtenir_choix(mots_autorises)
             self.send_message(f"{joueur}{choix}")
+            print(f"\nL'information a bien été envoyé\n")
             reponse = f"{self.ID} info"
             self.tcp_socket.send(reponse.encode())
-            print(f"\nL'information a bien été envoyé\n")
             
 
     def choix_indice(self):
