@@ -179,20 +179,20 @@ class Player:
     def add_to_suits(self,suits,nb_carte):
         nb_carte=nb_carte-1
         if self.get_couleur_carte(self.hand_Player[nb_carte]) == suits:
-            for i in range(5):
-                print(int(self.allsuits[self.get_suits_color_number(suits)][i]),int(self.get_valeur_carte(self.hand_Player[nb_carte])),int(self.allsuits[self.get_suits_color_number(suits)][i-1])+1)
-                if int(self.allsuits[self.get_suits_color_number(suits)][0]) == -1 and int(self.get_valeur_carte(self.hand_Player[nb_carte])) == 1:
-                    reponse = f"{self.ID} cartes {suits} {nb_carte}"
-                    self.tcp_socket.send(reponse.encode())
-                    return True
-                elif int(self.allsuits[self.get_suits_color_number(suits)][i]) == -1 and int(self.get_valeur_carte(self.hand_Player[nb_carte])) == int(self.get_valeur_carte(self.allsuits[self.get_suits_color_number(suits)][i-1]))+1:
-                    reponse = f"{self.ID} cartes {suits} {nb_carte}"
-                    self.tcp_socket.send(reponse.encode())
-                    return True
-                elif i==4 and int(self.allsuits[self.get_suits_color_number(suits)][i]) != -1:
+            for i in range(6):
+                if i==5:
                     reponse = f"{self.ID} discard {suits} {nb_carte}"
                     self.tcp_socket.send(reponse.encode())
-                    return False       
+                    return False  
+                elif int(self.allsuits[self.get_suits_color_number(suits)][0]) == -1 and int(self.get_valeur_carte(self.hand_Player[nb_carte])) == 1:
+                    reponse = f"{self.ID} cartes {suits} {nb_carte}"
+                    self.tcp_socket.send(reponse.encode())
+                    return True
+                elif i>1 and self.allsuits[self.get_suits_color_number(suits)][i-1] != -1:
+                    if int(self.allsuits[self.get_suits_color_number(suits)][i]) == -1 and int(self.get_valeur_carte(self.hand_Player[nb_carte])) == int(self.get_valeur_carte(self.allsuits[self.get_suits_color_number(suits)][i-1]))+1:
+                        reponse = f"{self.ID} cartes {suits} {nb_carte}"
+                        self.tcp_socket.send(reponse.encode())
+                        return True     
         elif self.get_couleur_carte(self.hand_Player[nb_carte]) != suits:
             reponse = reponse = f"{self.ID} discard {suits} {nb_carte}"
             self.tcp_socket.send(reponse.encode())
@@ -226,7 +226,7 @@ class Player:
         if reponse == True:
             print("Vous avez réussi à poser votre carte dans la bonne pile\n")
         elif reponse == False:
-            print(f"Vous avez raté. Vous perdez un fuse token. Il vous en reste {self.tokens[1]}\n")
+            print(f"Vous avez raté. Vous perdez un fuse token. Il vous en reste {self.tokens[1]-1}\n")
         print("Vous avez pioché une nouvelle carte")
         print("Fin de votre tour")
 
@@ -276,6 +276,7 @@ class Player:
         self.set_indice_and_reload()
         print(f"Vous etes le Joueur {self.ID}\n")
         print(f"Vous avez {self.tokens[0]} tokens d'information")
+        print(f"Vous avez {self.tokens[1]} fuse tokens\n")
         print("Voici les cartes des autres Joueurs:\n")
         self.show_cartes()
         print("Vous pouvez maintenant choisir entre 4 actions: Information, Cartes, Indice ou Suits\n")
@@ -342,7 +343,5 @@ class Player:
                         if self.get_couleur_carte(self.hand_Player[i])[0]==info:
                             self.indice[i][0] = True
             else:
-                ID = str(ID)
-                data.append(ID)
-                data.append(info)
-        self.queue.put(data)
+                self.queue.put(copie_queue[i])
+                self.queue.put(copie_queue[i+1])

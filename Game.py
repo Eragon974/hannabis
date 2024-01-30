@@ -90,20 +90,24 @@ class Game:
     def logic_buffer(self):
         message = self.buffer.split(" ")
         self.buffer=""
+        placed=False
         if message[1]== "info":
-            self.info_tokens-=1
+            self.tokens[0]-=1
         if message[1] == "cartes":
             i=int(message[0])
             j=int(message[3])
-            for i in range(len(self.allsuits[self.get_suits_color_number(message[2])])):
-                if self.allsuits[self.get_suits_color_number(message[2])][i]== -1:
-                    self.allsuits[self.get_suits_color_number(message[2])][i] = (self.allhand[i-1])[j]
+            k=0
+            while placed == False:
+                if self.allsuits[self.get_suits_color_number(message[2])][k]== -1:
+                    self.allsuits[self.get_suits_color_number(message[2])][k] = (self.allhand[i-1])[j]
+                    placed=True
+                k+=1
             self.discard_deck.append((self.allhand[i-1])[j])
             self.draw(j,self.players[i-1])
         if message[1] == "discard":
             i=int(message[0])
             j=int(message[3])
-            self.fuse_tokens-=1
+            self.tokens[1]-=1
             self.discard_deck.append(self.players[i-1].hand_Player[j])
             self.draw(j,self.players[i-1])
 
@@ -144,7 +148,7 @@ class Game:
         if all(self.endpile):
             won=True
             end=True
-        elif self.fuse_tokens == 0 :
+        elif self.tokens[1] == 0 :
             end = True
         else :
             if 4+i*5 in self.discard_deck:
@@ -195,5 +199,3 @@ if __name__ == "__main__" :
     port = int(input("Port > 6000\n"))
     game = Game(num_players,port)
     game.start()
-
-
